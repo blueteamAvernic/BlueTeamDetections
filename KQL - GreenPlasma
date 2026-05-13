@@ -1,5 +1,6 @@
 // Detects GreenPlasma by monitoring for suspicious ALPC port activity and the creation of unexpected memory sections by ctfmon.exe.
 // Subject to change as POC become available.
+// https://github.com/Nightmare-Eclipse/GreenPlasma
 
 DeviceProcessEvents
 | where InitiatingProcessFileName =~ "ctfmon.exe"
