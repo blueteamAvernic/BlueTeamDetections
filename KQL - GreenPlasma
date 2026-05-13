@@ -2,13 +2,16 @@
 // Subject to change as POC become available.
 // https://github.com/Nightmare-Eclipse/GreenPlasma
 
+//UAC Trigger Anomaly
 DeviceProcessEvents
-| where InitiatingProcessFileName =~ "ctfmon.exe"
-| where FileName !in~ ("ctfmon.exe", "msctf.dll", "TextInputHost.exe")
-| project Timestamp, DeviceId, DeviceName, InitiatingProcessFileName, FileName, ProcessCommandLine
-| join kind=inner (
-    DeviceEvents
-    | where ActionType == "AlpcPortConnection" 
-    | where AdditionalFields contains "ctf" or AdditionalFields contains "ALPC"
-) on DeviceId
-| project-away DeviceId1
+| where ActionType == "ProcessCreated"
+| where FileName =~ "consent.exe" 
+| where ProcessCommandLine contains "conhost.exe" 
+| project Timestamp, DeviceName, InitiatingProcessAccountName, ProcessCommandLine
+
+
+//DisableLockWorkstation Registry Tampering
+DeviceRegistryEvents
+| where RegistryKey contains @"Policies\System\DisableLockWorkstation"
+| where RegistryValueData == "1"
+| project Timestamp, DeviceName, InitiatingProcessFileName, RegistryKey
