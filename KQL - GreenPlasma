@@ -1,0 +1,13 @@
+// Detects GreenPlasma by monitoring for suspicious ALPC port activity and the creation of unexpected memory sections by ctfmon.exe.
+// Subject to change as POC become available.
+
+DeviceProcessEvents
+| where InitiatingProcessFileName =~ "ctfmon.exe"
+| where FileName !in~ ("ctfmon.exe", "msctf.dll", "TextInputHost.exe")
+| project Timestamp, DeviceId, DeviceName, InitiatingProcessFileName, FileName, ProcessCommandLine
+| join kind=inner (
+    DeviceEvents
+    | where ActionType == "AlpcPortConnection" 
+    | where AdditionalFields contains "ctf" or AdditionalFields contains "ALPC"
+) on DeviceId
+| project-away DeviceId1
