@@ -12,7 +12,7 @@ parameters:
     type: regex
   - name: MiniPlasmaRegPath
     description: "Target registry path for MiniPlasma CloudFiles redirection."
-    default: "HKEY_USERS\\*\\Software\\Policies\\Microsoft\\CloudFiles\\BlockedApps\\**"
+    default: "HKEY_USERS\\*\\Software\\Policies\\Microsoft\\CloudFiles\\BlockedApps\\*"
 
 sources:
   - name: Malicious_File_Drops
@@ -39,7 +39,7 @@ sources:
     query: |
       SELECT Key.FullPath AS KeyPath, 
              Name, 
-             Data.value AS RedirectValue, 
+             (Data.value || Data) AS RedirectValue, 
              Key.ModTime AS LastModified
       FROM glob(globs=MiniPlasmaRegPath, accessor="registry")
       WHERE RedirectValue =~ "(?i)Volatile Environment"
