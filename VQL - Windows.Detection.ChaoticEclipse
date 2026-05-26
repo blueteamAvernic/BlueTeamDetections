@@ -8,7 +8,7 @@ type: CLIENT
 parameters:
   - name: TargetExecutableRegex
     description: "Regex matching the known payload names."
-    default: "(?i)(RedSun|UnDefend|FunnyApp|autofstx)\\.exe$"
+    default: "(?i)(RedSun|UnDefend|FunnyApp)\\.exe$"
     type: regex
   - name: MiniPlasmaRegPath
     description: "Target registry path for MiniPlasma CloudFiles redirection."
@@ -24,6 +24,16 @@ sources:
       FROM parse_mft(filename="C:/$MFT", accessor="ntfs")
       WHERE NOT IsDir AND FullPath =~ TargetExecutableRegex
       
+  - name: RedSun_Defender_Decoy
+    description: "Hunts for native binaries (TieringEngineService, autofstx) staged outside of System32/SysWOW64/WinSxS."
+    query: |
+      SELECT FullPath, FileSize AS Size, InUse
+      FROM parse_mft(filename="C:/$MFT", accessor="ntfs")
+      WHERE NOT IsDir 
+        AND FullPath =~ "(?i)(TieringEngineService|autofstx)\\.exe$"
+        -- The regex below accounts for paths with or without the C:\ prefix
+        AND NOT FullPath =~ "(?i)^/?(C:)?/?Windows\\\\(System32|SysWOW64|WinSxS)\\\\"
+        
   - name: MiniPlasma_Registry_Anomaly
     description: "Hunts for unauthorized CloudFiles redirection in the user hives."
     query: |
@@ -33,12 +43,3 @@ sources:
              Key.ModTime AS LastModified
       FROM glob(globs=MiniPlasmaRegPath, accessor="registry")
       WHERE RedirectValue =~ "(?i)Volatile Environment"
-
-  - name: RedSun_Defender_Decoy
-    description: "Hunts for the TieringEngineService.exe decoy outside of expected System32 paths."
-    query: |
-      SELECT FullPath, FileSize AS Size, InUse
-      FROM parse_mft(filename="C:/$MFT", accessor="ntfs")
-      WHERE NOT IsDir 
-        AND FullPath =~ "(?i)TieringEngineService\\.exe$"
-        AND NOT FullPath =~ "(?i)^C:\\\\Windows\\\\System32\\\\"
