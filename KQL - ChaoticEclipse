@@ -1,0 +1,19 @@
+//ChaoticEclipse detections (RedSun, UnDefend, YellowKey, or MiniPlasma)
+
+let MaliciousDrops = DeviceFileEvents
+| where ActionType in ("FileCreated", "FileModified", "FileRenamed")
+| where FileName in~ ("redsun.exe", "undefend.exe", "funnyapp.exe")
+| extend IndicatorType = "Malicious Payload Drop";
+let LotLStaging = DeviceFileEvents
+| where ActionType in ("FileCreated", "FileModified", "FileRenamed")
+| where FileName in~ ("TieringEngineService.exe", "autofstx.exe")
+| where not(FolderPath has_any (@"\Windows\System32\", @"\Windows\SysWOW64\", @"\Windows\WinSxS\", @"\Windows\SoftwareDistribution\"))
+| extend IndicatorType = "LotL Binary Staged";
+let RegistryAnomaly = DeviceRegistryEvents
+| where ActionType == "RegistryValueSet"
+| where RegistryKey contains @"\Software\Policies\Microsoft\CloudFiles\BlockedApps"
+| where RegistryValueData has "Volatile Environment"
+| extend IndicatorType = "MiniPlasma Registry Anomaly";
+union MaliciousDrops, LotLStaging, RegistryAnomaly
+| project Timestamp, DeviceName, IndicatorType, ActionType, FileName, FolderPath, RegistryKey, RegistryValueData, InitiatingProcessCommandLine
+| sort by Timestamp desc
